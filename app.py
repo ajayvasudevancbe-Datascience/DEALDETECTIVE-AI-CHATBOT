@@ -6,7 +6,7 @@ from datetime import datetime
 import streamlit as st
 from huggingface_hub import InferenceClient
 
-st.set_page_config(page_title="DealDetective AI", page_icon="🔎", layout="centered")
+st.set_page_config(page_title="DealDetective AI", page_icon="🔎", layout="wide")
 
 SYSTEM_PROMPT = """
 You are DealDetective AI, a smart shopping assistant.
@@ -101,34 +101,96 @@ def web_search(queries: list[str]) -> str:
 
 
 # ---------- UI ----------
-st.title("🔎 DealDetective AI")
-st.caption("Is this actually a good deal? Powered by open models on Hugging Face + live web search.")
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: #ffffff;
+        color: #202123;
+    }
+    [data-testid="stSidebar"] {
+        background: #f9f9f9;
+        border-right: 1px solid #ececec;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem;
+    }
+    .block-container {
+        max-width: 900px;
+        padding-top: 2rem;
+        padding-bottom: 7rem;
+    }
+    [data-testid="stChatMessage"] {
+        border: 0;
+        padding: 1rem 0.5rem;
+    }
+    [data-testid="stChatInput"] {
+        border-radius: 1.5rem;
+        border: 1px solid #d9d9e3;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+    [data-testid="stChatInput"] textarea {
+        padding-top: 0.8rem;
+    }
+    .welcome-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 5rem 0 0.5rem;
+        color: #202123;
+    }
+    .welcome-subtitle {
+        text-align: center;
+        color: #6e6e80;
+        margin-bottom: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
-    model_label = st.selectbox("Model", list(MODELS))
-    model = MODELS[model_label]
-    use_search = st.toggle("Live web search", value=True,
-                           help="Turn off only if you don't need current prices.")
-    st.subheader("Try asking")
-    for ex in [
-        "Is the boAt Airdopes 141 at ₹1,299 worth it?",
-        "Best laptop under ₹50,000 for programming",
-        "Is this 70% discount real?",
-    ]:
-        if st.button(ex, use_container_width=True):
-            st.session_state.pending = ex
-    if st.button("🗑️ Clear chat", use_container_width=True):
+    st.markdown("## 🔎 DealDetective")
+    if st.button("＋  New chat", use_container_width=True, type="primary"):
         st.session_state.messages = []
         st.rerun()
+    st.divider()
+    with st.expander("⚙️ Chat settings", expanded=True):
+        model_label = st.selectbox("Model", list(MODELS))
+        model = MODELS[model_label]
+        use_search = st.toggle(
+            "Live web search",
+            value=True,
+            help="Turn off only if you don't need current prices.",
+        )
+    st.caption("Powered by Hugging Face")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if not st.session_state.messages:
+    st.markdown('<div class="welcome-title">What are you shopping for?</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="welcome-subtitle">Check a deal, compare products, or find your next buy.</div>',
+        unsafe_allow_html=True,
+    )
+    suggestions = [
+        "Is the boAt Airdopes 141 at ₹1,299 worth it?",
+        "Best laptop under ₹50,000 for programming",
+        "Is this 70% discount real?",
+        "Compare these two products for me",
+    ]
+    columns = st.columns(2)
+    for index, suggestion in enumerate(suggestions):
+        with columns[index % 2]:
+            if st.button(suggestion, key=f"suggestion_{index}", use_container_width=True):
+                st.session_state.pending = suggestion
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-user_input = st.chat_input("Ask about a product or deal...")
+user_input = st.chat_input("Message DealDetective...")
 if "pending" in st.session_state:
     user_input = st.session_state.pop("pending")
 
