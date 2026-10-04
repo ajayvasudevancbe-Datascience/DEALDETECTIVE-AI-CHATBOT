@@ -2,14 +2,25 @@ import json
 import os
 import re
 from datetime import datetime
-from pathlib import Path
 
 import streamlit as st
 from huggingface_hub import InferenceClient
 
 st.set_page_config(page_title="DealDetective AI", page_icon="🔎", layout="centered")
 
-PROMPT_FILE = Path(__file__).with_name("dealdetective_prompt.md")
+SYSTEM_PROMPT = """
+You are DealDetective AI, a smart shopping assistant.
+
+Analyze products based on price, discount, rating, reviews, and features.
+
+Give a simple recommendation:
+BUY, WAIT, or AVOID.
+
+Explain your recommendation clearly and briefly.
+
+Never invent product information, prices, or reviews.
+If information is missing, say so.
+"""
 
 MODELS = {
     "Qwen2.5 72B Instruct (recommended)": "Qwen/Qwen2.5-72B-Instruct",
@@ -39,12 +50,8 @@ def get_token() -> str:
     return token
 
 
-@st.cache_data
 def load_system_prompt() -> str:
-    if not PROMPT_FILE.exists():
-        st.error(f"Missing {PROMPT_FILE.name} in the app folder.")
-        st.stop()
-    return PROMPT_FILE.read_text(encoding="utf-8") + "\n" + RUNTIME_NOTES
+    return SYSTEM_PROMPT + "\n" + RUNTIME_NOTES
 
 
 def chat(model: str, messages: list, max_tokens: int = 2000, temperature: float = 0.3) -> str:
